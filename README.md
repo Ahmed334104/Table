@@ -224,6 +224,110 @@
             font-size: 1rem;
         }
         
+        /* تصميم رفع الملفات */
+        .file-upload-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px dashed #ddd;
+        }
+        
+        .file-upload-area {
+            text-align: center;
+            padding: 30px;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .file-upload-area:hover {
+            background: #e3f2fd;
+            border-color: #2980b9;
+        }
+        
+        .file-upload-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .uploaded-files {
+            margin-top: 20px;
+        }
+        
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .file-icon {
+            font-size: 1.2rem;
+        }
+        
+        .file-details {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .file-action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .view-btn {
+            background: #3498db;
+            color: white;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
         .total-hours-section {
             background: #e3f2fd;
             padding: 15px;
@@ -248,6 +352,45 @@
         .schedule-item.active {
             border-left-color: var(--secondary);
             box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+        
+        .subject-files {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .file-card {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .file-card-icon {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+        
+        .file-card-name {
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+            word-break: break-word;
+        }
+        
+        .file-card-size {
+            font-size: 0.7rem;
+            color: #666;
         }
         
         .schedule-header {
@@ -488,6 +631,10 @@
             .plan-summary {
                 grid-template-columns: repeat(2, 1fr);
             }
+            
+            .files-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -563,10 +710,6 @@
                 </div>
                 <div class="form-row">
                     <div class="form-column">
-                        <label for="fileSize">حجم الملف (MB)</label>
-                        <input type="number" id="fileSize" placeholder="حجم الملف بالميجابايت" min="1" value="10">
-                    </div>
-                    <div class="form-column">
                         <label for="importance">درجة الأهمية</label>
                         <select id="importance">
                             <option value="3">عالية جداً ⭐⭐⭐</option>
@@ -575,6 +718,26 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- قسم رفع الملفات -->
+                <div class="file-upload-section">
+                    <h4>📁 رفع ملفات المادة</h4>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="file-upload-icon">📤</div>
+                        <p>انقر لرفع الملفات أو اسحبها هنا</p>
+                        <p style="font-size: 0.8rem; color: #666;">يمكنك رفع ملفات PDF, Word, PowerPoint, صور</p>
+                        <input type="file" id="subjectFiles" class="file-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png">
+                    </div>
+                    
+                    <div class="uploaded-files" id="uploadedFiles" style="display: none;">
+                        <h5>الملفات المرفوعة:</h5>
+                        <div class="file-list" id="fileList">
+                            <!-- الملفات المرفوعة تظهر هنا -->
+                        </div>
+                        <div class="file-stats" id="fileStats"></div>
+                    </div>
+                </div>
+
                 <button id="addSubjectBtn" class="action-btn start-btn" style="margin-top: 15px;">➕ إضافة المادة</button>
             </div>
             
@@ -646,12 +809,26 @@
         let sessionsCompleted = 0;
         let audioContext;
         let isAudioEnabled = false;
+        let uploadedFiles = [];
 
         // أوزان التوزيع حسب الصعوبة
         const difficultyWeights = {
-            'high': 1.5,   // مواد صعبة تأخذ وقت أكثر
-            'medium': 1.0, // مواد متوسطة
-            'low': 0.7     // مواد سهلة تأخذ وقت أقل
+            'high': 1.5,
+            'medium': 1.0,
+            'low': 0.7
+        };
+
+        // رموز أنواع الملفات
+        const fileIcons = {
+            'pdf': '📕',
+            'doc': '📘',
+            'docx': '📘',
+            'ppt': '📊',
+            'pptx': '📊',
+            'jpg': '🖼️',
+            'jpeg': '🖼️',
+            'png': '🖼️',
+            'default': '📄'
         };
 
         // تهيئة الصفحة
@@ -678,6 +855,15 @@
             document.getElementById('distributeHoursBtn').addEventListener('click', distributeHours);
             document.getElementById('startStudyPlanBtn').addEventListener('click', startStudyPlan);
 
+            // أحداث رفع الملفات
+            const fileInput = document.getElementById('subjectFiles');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            
+            fileUploadArea.addEventListener('click', () => fileInput.click());
+            fileUploadArea.addEventListener('dragover', handleDragOver);
+            fileUploadArea.addEventListener('drop', handleFileDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+
             // أحداث التبويب
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
@@ -687,24 +873,143 @@
             });
         }
 
+        // إدارة الملفات
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.style.background = '#e3f2fd';
+            e.currentTarget.style.borderColor = '#2980b9';
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.style.background = '#f8f9fa';
+            e.currentTarget.style.borderColor = '#3498db';
+            
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                for (let file of files) {
+                    // التحقق من نوع الملف
+                    if (!isValidFileType(file)) {
+                        alert(`نوع الملف غير مدعوم: ${file.name}`);
+                        continue;
+                    }
+                    
+                    // التحقق من حجم الملف (50MB كحد أقصى)
+                    if (file.size > 50 * 1024 * 1024) {
+                        alert(`حجم الملف كبير جداً: ${file.name}`);
+                        continue;
+                    }
+                    
+                    uploadedFiles.push(file);
+                }
+                updateFileList();
+            }
+        }
+
+        function isValidFileType(file) {
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'image/jpeg',
+                'image/jpg',
+                'image/png'
+            ];
+            return allowedTypes.includes(file.type);
+        }
+
+        function getFileIcon(fileName) {
+            const extension = fileName.split('.').pop().toLowerCase();
+            return fileIcons[extension] || fileIcons.default;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const uploadedFilesDiv = document.getElementById('uploadedFiles');
+            const fileStats = document.getElementById('fileStats');
+            
+            if (uploadedFiles.length === 0) {
+                uploadedFilesDiv.style.display = 'none';
+                return;
+            }
+            
+            uploadedFilesDiv.style.display = 'block';
+            
+            // حساب إجمالي حجم الملفات
+            const totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0);
+            fileStats.innerHTML = `<strong>إجمالي حجم الملفات: ${formatFileSize(totalSize)}</strong>`;
+            
+            fileList.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">${getFileIcon(file.name)}</div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <button class="file-action-btn view-btn" onclick="viewFile(${index})">عرض</button>
+                        <button class="file-action-btn delete-btn" onclick="removeFile(${index})">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewFile(index) {
+            const file = uploadedFiles[index];
+            const fileURL = URL.createObjectURL(file);
+            window.open(fileURL, '_blank');
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+        }
+
         // إدارة المواد الدراسية
         function addSubject() {
             const name = document.getElementById('subjectName').value.trim();
             const priority = document.getElementById('priority').value;
-            const fileSize = parseInt(document.getElementById('fileSize').value);
             const importance = parseInt(document.getElementById('importance').value);
 
-            if (!name || !fileSize) {
-                alert('يرجى ملء جميع الحقول المطلوبة');
+            if (!name) {
+                alert('يرجى إدخال اسم المادة');
                 return;
+            }
+
+            if (uploadedFiles.length === 0) {
+                const confirmAdd = confirm('لم تقم برفع أي ملفات للمادة. هل تريد الاستمرار في الإضافة؟');
+                if (!confirmAdd) return;
             }
 
             const subject = {
                 id: Date.now(),
                 name: name,
                 priority: priority,
-                fileSize: fileSize,
                 importance: importance,
+                files: [...uploadedFiles],
                 assignedHours: 0,
                 completed: 0,
                 addedDate: new Date().toLocaleDateString('ar-EG')
@@ -714,16 +1019,17 @@
             saveSubjects();
             renderSubjects();
             generateStudyPlan();
-
-            alert(`تم إضافة المادة "${name}" بنجاح`);
             clearForm();
+
+            alert(`تم إضافة المادة "${name}" بنجاح مع ${subject.files.length} ملف`);
         }
 
         function clearForm() {
             document.getElementById('subjectName').value = '';
             document.getElementById('priority').value = 'medium';
-            document.getElementById('fileSize').value = '10';
             document.getElementById('importance').value = '2';
+            uploadedFiles = [];
+            updateFileList();
         }
 
         // توزيع الساعات تلقائياً
@@ -740,7 +1046,6 @@
                 return;
             }
 
-            // حساب الأوزان الإجمالية
             let totalWeight = 0;
             subjects.forEach(subject => {
                 const difficultyWeight = difficultyWeights[subject.priority];
@@ -748,14 +1053,13 @@
                 totalWeight += difficultyWeight * importanceWeight;
             });
 
-            // توزيع الساعات
             subjects.forEach(subject => {
                 const difficultyWeight = difficultyWeights[subject.priority];
                 const importanceWeight = subject.importance;
                 const subjectWeight = difficultyWeight * importanceWeight;
                 const assignedHours = (subjectWeight / totalWeight) * totalHours;
                 
-                subject.assignedHours = Math.round(assignedHours * 10) / 10; // تقريب لرقم عشري واحد
+                subject.assignedHours = Math.round(assignedHours * 10) / 10;
             });
 
             saveSubjects();
@@ -799,14 +1103,31 @@
                             <div class="detail-value">${'⭐'.repeat(subject.importance)}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">حجم الملف</div>
-                            <div class="detail-value">${subject.fileSize} MB</div>
+                            <div class="detail-label">عدد الملفات</div>
+                            <div class="detail-value">${subject.files.length} ملف</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">تاريخ الإضافة</div>
                             <div class="detail-value">${subject.addedDate}</div>
                         </div>
                     </div>
+
+                    ${subject.files.length > 0 ? `
+                    <div class="subject-files">
+                        <h5>ملفات المادة:</h5>
+                        <div class="files-grid">
+                            ${subject.files.map((file, index) => `
+                                <div class="file-card">
+                                    <div class="file-card-icon">${getFileIcon(file.name)}</div>
+                                    <div class="file-card-name">${file.name}</div>
+                                    <div class="file-card-size">${formatFileSize(file.size)}</div>
+                                    <button class="action-btn view-btn" style="margin-top: 5px; padding: 3px 8px; font-size: 0.7rem;" 
+                                            onclick="viewSubjectFile(${subject.id}, ${index})">عرض</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
                     
                     <div class="progress-section">
                         <div class="progress-info">
@@ -829,19 +1150,30 @@
             document.getElementById('studyPlan').style.display = 'block';
         }
 
+        function viewSubjectFile(subjectId, fileIndex) {
+            const subject = subjects.find(s => s.id === subjectId);
+            if (subject && subject.files[fileIndex]) {
+                const file = subject.files[fileIndex];
+                const fileURL = URL.createObjectURL(file);
+                window.open(fileURL, '_blank');
+            }
+        }
+
+        // باقي الدوال تبقى كما هي...
+        // [يتم إضافة باقي الدوال من الكود السابق]
+
         function generateStudyPlan() {
             if (subjects.length === 0) return;
 
             const totalHours = subjects.reduce((sum, subject) => sum + subject.assignedHours, 0);
-            const totalSessions = Math.ceil(totalHours * 2); // كل ساعة = جلستين بومودورو
-            const completionTime = totalHours + (totalSessions * 0.0833); // إضافة وقت الراحة
+            const totalSessions = Math.ceil(totalHours * 2);
+            const completionTime = totalHours + (totalSessions * 0.0833);
 
             document.getElementById('totalSubjects').textContent = subjects.length;
             document.getElementById('totalHours').textContent = totalHours.toFixed(1);
             document.getElementById('totalSessions').textContent = totalSessions;
             document.getElementById('completionTime').textContent = completionTime.toFixed(1);
 
-            // توليد جلسات البومودورو
             currentStudyPlan = [];
             const sessionsContainer = document.getElementById('pomodoroSessions');
             sessionsContainer.innerHTML = '';
@@ -901,8 +1233,9 @@
             if (subject) {
                 document.getElementById('subjectName').value = subject.name;
                 document.getElementById('priority').value = subject.priority;
-                document.getElementById('fileSize').value = subject.fileSize;
                 document.getElementById('importance').value = subject.importance;
+                uploadedFiles = [...subject.files];
+                updateFileList();
                 
                 deleteSubject(subjectId);
             }
@@ -915,7 +1248,7 @@
             generateStudyPlan();
         }
 
-        // إدارة المؤقت
+        // دوال المؤقت
         function startTimer() {
             if (!isRunning) {
                 isRunning = true;
@@ -948,7 +1281,6 @@
         function nextSession() {
             if (currentStudyPlan.length === 0) return;
 
-            // تحديث تقدم المادة الحالية
             if (currentSessionIndex < currentStudyPlan.length) {
                 const currentSession = currentStudyPlan[currentSessionIndex];
                 const subject = subjects.find(s => s.id === currentSession.subjectId);
@@ -962,13 +1294,11 @@
 
             currentSessionIndex++;
             if (currentSessionIndex >= currentStudyPlan.length) {
-                // انتهت جميع الجلسات
                 alert('🎉 مبروك! لقد أكملت جميع جلسات الدراسة المخطط لها!');
                 resetTimer();
                 return;
             }
 
-            // بدء الجلسة التالية
             isStudySession = true;
             totalSeconds = 25 * 60;
             updateTimerDisplay();
@@ -982,18 +1312,15 @@
                 totalSeconds--;
                 updateTimerDisplay();
             } else {
-                // انتهت الجلسة
                 playTone();
                 if (isStudySession) {
-                    // انتهت جلسة الدراسة
                     isStudySession = false;
-                    totalSeconds = 5 * 60; // 5 دقائق راحة
+                    totalSeconds = 5 * 60;
                     document.getElementById('sessionInfo').textContent = '⏳ وقت راحة';
                     sessionsCompleted++;
                 } else {
-                    // انتهت جلسة الراحة
                     isStudySession = true;
-                    totalSeconds = 25 * 60; // 25 دقيقة دراسة
+                    totalSeconds = 25 * 60;
                     document.getElementById('sessionInfo').textContent = '📚 جلسة دراسة';
                     nextSession();
                 }
@@ -1027,14 +1354,12 @@
                 document.getElementById('currentSession').textContent = 
                     `${currentSession.sessionInSubject}/${currentSession.totalSessionsInSubject}`;
                 
-                // حساب التقدم الكلي
                 const totalSessions = currentStudyPlan.length;
                 const overallProgress = Math.round((currentSessionIndex / totalSessions) * 100);
                 document.getElementById('overallProgress').textContent = `${overallProgress}%`;
                 
-                // حساب الوقت المتبقي
                 const remainingSessions = totalSessions - currentSessionIndex;
-                const remainingMinutes = remainingSessions * 30; // كل جلسة 30 دقيقة (25 دراسة + 5 راحة)
+                const remainingMinutes = remainingSessions * 30;
                 const remainingHours = Math.floor(remainingMinutes / 60);
                 const remainingMins = remainingMinutes % 60;
                 document.getElementById('remainingTime').textContent = 
@@ -1043,7 +1368,6 @@
         }
 
         function playTone() {
-            // تنفيذ تشغيل النغمة
             if (isAudioEnabled && audioContext) {
                 // كود تشغيل النغمة
             }
@@ -1058,7 +1382,6 @@
             }
         }
 
-        // دوال التبويب
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1067,15 +1390,23 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        // التخزين المحلي
         function saveSubjects() {
-            localStorage.setItem('studySubjects', JSON.stringify(subjects));
+            localStorage.setItem('studySubjects', JSON.stringify(subjects.map(subject => ({
+                ...subject,
+                files: subject.files.map(file => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    lastModified: file.lastModified
+                }))
+            }))));
         }
 
         function loadSubjects() {
             const saved = localStorage.getItem('studySubjects');
             if (saved) {
-                subjects = JSON.parse(saved);
+                const savedSubjects = JSON.parse(saved);
+                subjects = savedSubjects;
                 renderSubjects();
                 generateStudyPlan();
             }
